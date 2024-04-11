@@ -158,7 +158,8 @@ def scrapper_les_entreprises(base_dir):
 
 def scrapper_les_avis_par_pages(page_obj):
     
-    time.sleep(random.randint(10, 20))
+    temps = page_obj['page'] + random.randint(50, 100) if page_obj['page'] < 100 else (page_obj['page']//2) + random.randint(50,100)
+    time.sleep(temps)
     
     #  stocker les avis par entreprise
     noms_entreprises=[]
@@ -293,6 +294,12 @@ def scrapper_les_avis(row, csv_directory):
     })
     
     print(df_avis.head())
+
+    # Check if directory already exists (optional)
+    if os.path.exists(csv_directory) == False:
+        
+        # Create the directory
+        os.makedirs(csv_directory)
     
     # Sauvegarde du DataFrame dans un fichier CSV
     df_avis.to_csv(f"{csv_directory}/avis_{entreprise}.csv", index=False)
@@ -300,7 +307,7 @@ def scrapper_les_avis(row, csv_directory):
     print(f"Fin du scrapping des avis de l'entreprise {entreprise}.\n")
     
     # Pour eviter la détection un volume anormalement élevé de requêtes provenant de mon adresse IP 
-    time.sleep(random.randint(900, 1800))
+    time.sleep(300)
     
 
 
@@ -315,15 +322,11 @@ if __name__ == '__main__':
     df_entreprises = pd.read_csv(f'{base_dir}/entreprises.csv')
     df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 0]
 
+    except_entreprisse = ["Nextories (ex i-Demenager)", "La Tournée", "CartonsDeDemenagement.com", "LOCABOX"]
+
     # run scrapper (itertuples for efficiency)
     for _, row in df_entreprises.iterrows():
-        scrapper_les_avis(row, csv_directory)
+        if row["Entreprise"] not in except_entreprisse:
+            scrapper_les_avis(row, csv_directory)
 
     unify_csv_files(csv_directory, output_file)
-
-
-
-
-
-    
-
