@@ -158,7 +158,9 @@ def scrapper_les_entreprises(base_dir):
 
 def scrapper_les_avis_par_pages(page_obj):
     
-    temps = page_obj['page'] + random.randint(50, 100) if page_obj['page'] < 100 else (page_obj['page']//2) + random.randint(50,100)
+    random_num = random.randint(10, 30)
+    facteur = page_obj['page']//100 + 1
+    temps = (page_obj['page']//facteur) + random_num +1 
     time.sleep(temps)
     
     #  stocker les avis par entreprise
@@ -224,6 +226,7 @@ def scrapper_les_avis_par_pages(page_obj):
                 
         else:
             print(f"\t\tErreur lors de la requête de la Page {page_obj['page']}: {response.status_code}")
+            time.sleep(10)
     except Exception as e:
         print(f"Erreur lors de la récupération des données pour {url}: {e}")
     
@@ -307,7 +310,7 @@ def scrapper_les_avis(row, csv_directory):
     print(f"Fin du scrapping des avis de l'entreprise {entreprise}.\n")
     
     # Pour eviter la détection un volume anormalement élevé de requêtes provenant de mon adresse IP 
-    time.sleep(300)
+    time.sleep(30)
     
 
 
@@ -320,13 +323,13 @@ if __name__ == '__main__':
     
     scrapper_les_entreprises(base_dir)
     df_entreprises = pd.read_csv(f'{base_dir}/entreprises.csv')
-    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 0]
-
-    except_entreprisse = ["Nextories (ex i-Demenager)", "La Tournée", "CartonsDeDemenagement.com", "LOCABOX"]
+    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 24000]
+    df_entreprises = df_entreprises.sort_values("NombreAvis")
 
     # run scrapper (itertuples for efficiency)
     for _, row in df_entreprises.iterrows():
-        if row["Entreprise"] not in except_entreprisse:
-            scrapper_les_avis(row, csv_directory)
+        scrapper_les_avis(row, csv_directory)
 
-    unify_csv_files(csv_directory, output_file)
+    # unify_csv_files(csv_directory, output_file)
+
+    #  unify_csv_files("tmp/avis", "tmp/avis.csv")
