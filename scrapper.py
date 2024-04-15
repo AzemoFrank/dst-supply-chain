@@ -158,7 +158,7 @@ def scrapper_les_entreprises(base_dir):
 
 def scrapper_les_avis_par_pages(page_obj):
     
-    random_num = random.randint(10, 30)
+    random_num = random.randint(5, 15)
     facteur = page_obj['page']//100 + 1
     temps = (page_obj['page']//facteur) + random_num +1 
     time.sleep(temps)
@@ -255,7 +255,7 @@ def scrapper_les_avis(row, csv_directory):
                     "Mozilla/5.0 (Linux; Android 13; Pixel 6 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Mobile Safari/537.36"]
     pages_objs = []
     
-    print(f"Début du scrapping des avis de l'entreprise {entreprise}.\nUrl: {base_url}\nNombres de pages = {nombre_de_pages} à raison de 20 avis par page.")
+    print(f"Début du scrapping des avis de l'entreprise {entreprise}.\nUrl: {base_url}\nNombre d'avis = {row['NombreAvis']}\nNombres de pages = {nombre_de_pages} à raison de 20 avis par page.")
     
     for page in range(1, nombre_de_pages + 1):
         
@@ -310,7 +310,7 @@ def scrapper_les_avis(row, csv_directory):
     print(f"Fin du scrapping des avis de l'entreprise {entreprise}.\n")
     
     # Pour eviter la détection un volume anormalement élevé de requêtes provenant de mon adresse IP 
-    time.sleep(30)
+    time.sleep(20)
     
 
 
@@ -323,7 +323,7 @@ if __name__ == '__main__':
     
     scrapper_les_entreprises(base_dir)
     df_entreprises = pd.read_csv(f'{base_dir}/entreprises.csv')
-    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 24000]
+    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 79000]
     df_entreprises = df_entreprises.sort_values("NombreAvis")
 
     # run scrapper (itertuples for efficiency)
@@ -332,4 +332,4 @@ if __name__ == '__main__':
 
     # unify_csv_files(csv_directory, output_file)
 
-    #  unify_csv_files("tmp/avis", "tmp/avis.csv")
+    # unify_csv_files("tmp/avis", "tmp/avis.csv")
