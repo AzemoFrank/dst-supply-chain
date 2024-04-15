@@ -323,13 +323,11 @@ if __name__ == '__main__':
     
     scrapper_les_entreprises(base_dir)
     df_entreprises = pd.read_csv(f'{base_dir}/entreprises.csv')
-    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 79000]
+    df_entreprises = df_entreprises[df_entreprises["NombreAvis"] > 0]
     df_entreprises = df_entreprises.sort_values("NombreAvis")
 
     # run scrapper (itertuples for efficiency)
     for _, row in df_entreprises.iterrows():
         scrapper_les_avis(row, csv_directory)
 
-    # unify_csv_files(csv_directory, output_file)
-
-    # unify_csv_files("tmp/avis", "tmp/avis.csv")
+    unify_csv_files(csv_directory, output_file)
