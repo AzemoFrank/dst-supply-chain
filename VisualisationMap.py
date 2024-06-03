@@ -5,6 +5,7 @@ import folium
 import geopandas as gpd
 from wordcloud import WordCloud
 from collections import Counter
+from nltk.corpus import stopwords
 
 class VisualisationGeneral:
     """
@@ -140,12 +141,12 @@ class VisualisationGeneral:
         text = " ".join(review for review in data_frame[column].dropna())
         
         # Créer l'objet WordCloud
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
-        
+        wordcloud = WordCloud(background_color="black",width=800, height=400, max_words=50, stopwords=set(stopwords.words('french')), max_font_size=50, random_state=42).generate(text)
+    
+
         # Afficher le nuage de mots
         plt.figure(figsize=(10, 5))
-        plt.imshow(wordcloud, interpolation='bilinear')
-        plt.axis("off")
+        plt.imshow(wordcloud)
         plt.show()
 
 
