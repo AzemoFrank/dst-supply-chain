@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
 import re
-from langdetect import detect, DetectorFactory, LangDetectException
-import emoji
-import pycountry
 from sklearn.base import BaseEstimator, TransformerMixin
 from prepro_entreprises import EntreprisePreprocessor  # Assurez-vous que le chemin d'importation est correct
+from langdetect import detect, LangDetectException
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
-# Pour la reproductibilité des résultats de langdetect
-DetectorFactory.seed = 0
+
+nltk.download('vader_lexicon')  # Télécharger le lexique de VADER une seule fois
+
 
 class AvisPreprocessor(BaseEstimator, TransformerMixin):
     def __init__(self, fill_value='Inconnu'):
@@ -22,40 +23,15 @@ class AvisPreprocessor(BaseEstimator, TransformerMixin):
 
    
 
-    def detect_language(self, text):
-        """Détecte la langue du texte."""
-        if len(text.strip()) < 3:
-            return 'Unknown'  # Retourne 'Unknown' si le texte est trop court
-        try:
-            return detect(text)
-        except LangDetectException as e:
-            return 'Unknown'
-        except Exception as e:
-            return 'Unknown'
-
-    @staticmethod
-    def extract_emojis(text):
-        """Extract emojis from the text."""
-        emojis = emoji.emoji_list(text)  # Cette méthode retourne une liste de dictionnaires pour chaque emoji
-        return ''.join(e['emoji'] for e in emojis)  # Concatène les emojis en une seule chaîne
-
-    @staticmethod
-    def convert_emojis_to_text(emojis):
-        """Convert emojis to descriptive text."""
-        return emoji.demojize(emojis, delimiters=("", " "))  # Convertit les emojis en texte descriptif
-
-
-
-    @staticmethod
-    def validate_language_code(code):
-        """Vérifie si un code de langue est un code ISO 639-1 ou ISO 639-2 valide."""
-        return pycountry.languages.get(alpha_2=code) or pycountry.languages.get(alpha_3=code) is not None
-
-    def fit(self, X, y=None):
-        return self
-
+    
+    
     def transform(self, X):
         """Applique les transformations pour nettoyer et analyser les données d'avis."""
+        #s'assurer que les colonnes attendues sont présentes avant de tenter des opérations dessus.
+        required_columns = ['Nom_Entreprise', 'Nom_Client', 'Pays', 'Date', 'Titre_avis', 'Contenu_avis']
+        if not all(col in X.columns for col in required_columns):
+            missing = list(set(required_columns) - set(X.columns))
+            raise ValueError(f"Missing columns in input data: {missing}")
         X_transformed = X.copy()
         X_transformed['Nom_Entreprise'] = X_transformed['Nom_Entreprise'].apply(lambda x: self.preprocessor.clean_text(str(x)) if pd.notna(x) else x)
         X_transformed['Nom_Client'] = X_transformed['Nom_Client'].apply(lambda x: self.preprocessor.clean_text(str(x)) if pd.notna(x) else self.fill_value)
@@ -70,28 +46,37 @@ class AvisPreprocessor(BaseEstimator, TransformerMixin):
         X_transformed["day"] = X_transformed['Date'].dt.day
         X_transformed["hour"] = X_transformed['Date'].dt.hour
 
-        # Extraction des emojis
-        X_transformed['emojis'] = X_transformed['Contenu_avis'].apply(self.extract_emojis)
-        # Conversion des emojis en texte descriptif
-        X_transformed['emojis_text'] = X_transformed['emojis'].apply(self.convert_emojis_to_text)
-
         # Appliquez preprocess_text en s'assurant que les inputs sont des chaînes
         X_transformed['Titre_avis'] = X_transformed['Titre_avis'].apply(lambda x: self.preprocessor.clean_text(x) if pd.notna(x) else "")
         X_transformed['Contenu_avis'] = X_transformed['Contenu_avis'].apply(lambda x: self.preprocessor.clean_text(x) if pd.notna(x) else "")
         # Remplacer le contenu de 'contenu_avis' par celui de 'titre_avis' quand 'contenu_avis' contient 'non'
         X_transformed['Contenu_avis'] = np.where(X_transformed['Contenu_avis'].str.contains('non'), X_transformed['Titre_avis'], X_transformed['Contenu_avis'])
+        
         # Supprimer les lignes où la colonne 'Contenu_avis' contient des NaN
         X_transformed = X_transformed.dropna(subset=['Contenu_avis'])
         # Détection de la langue et extraction des emojis
         X_transformed['Langue'] = X_transformed['Contenu_avis'].apply(self.detect_language)
-           # Extraction des emojis
-        X_transformed['extracted_emojis'] = X_transformed['Contenu_avis'].apply(self.extract_emojis)
-
-        # Convertir les emojis en texte descriptif
-        X_transformed["emojis_text"] = X_transformed['extracted_emojis'].apply(lambda text: emoji.demojize(text, delimiters=("", " ")))
-
-
+        # garder la langue france
+        X_transformed=X_transformed[X_transformed['Langue']=='fr']
         return X_transformed
+    
+
+    
+    def detect_language(self,text):
+    
+        """
+        Detect the language of the text, handling non-string types and NaN values.
+        """
+        if not isinstance(text, str) or pd.isna(text):
+            return 'Unknown'
+        try:
+            return detect(text) if len(text.strip()) > 3 else 'Unknown'
+        except LangDetectException:
+            return 'Unknown'
+
+
+
+
 
 if __name__ == '__main__':
     # Test des transformations
@@ -104,12 +89,7 @@ if __name__ == '__main__':
     transformed_df = preprocessor.transform(df_test)
 
     print("\n--- Vérifications Après Transformation ---")
-    print("Noms d'entreprises nettoyés:", transformed_df['Nom_Entreprise'].tolist())
-    print("Noms de clients nettoyés:", transformed_df['Nom_Client'].tolist())
-    print("Pays après remplissage des valeurs manquantes:", transformed_df['Pays'].tolist())
-    print("Dates converties en datetime:", transformed_df['Date'].dtypes)
-    print("avis nettoi:", transformed_df['Contenu_avis'][0])
-    print("Titreavis netoi:", transformed_df['Titre_avis'][0])
+
     print(transformed_df.head())
     print(transformed_df.info())
     print(transformed_df.isna().sum())
