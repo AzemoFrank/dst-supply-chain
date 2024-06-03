@@ -96,8 +96,9 @@ class EntreprisePreprocessor(BaseEstimator, TransformerMixin):
         X_transformed['Location'] = X_transformed['Location'].apply(self.clean_location)
         #Rechercher et éliminer les enregistrements en double pour éviter la redondance.
         X_transformed = X_transformed.drop_duplicates(subset=['Entreprise'], keep='last')
-
-        if 'ServicesProposes' in X_transformed:
+        X_transformed['ServicesProposes'] = X_transformed['ServicesProposes'].apply(literal_eval)
+        """ 
+       if 'ServicesProposes' in X_transformed:
             X_transformed['ServicesProposes'] = X_transformed['ServicesProposes'].apply(literal_eval)
             X_transformed['ServicesProposes'] = X_transformed['ServicesProposes'].apply(
                 lambda x: [s.lower().strip() for s in x])
@@ -106,7 +107,8 @@ class EntreprisePreprocessor(BaseEstimator, TransformerMixin):
                                             columns=self.mlb.classes_,
                                             index=X_transformed.index)
             X_transformed = X_transformed.join(services_encoded)
-            X_transformed.drop('ServicesProposes', axis=1, inplace=True)  # Optional: remove original column
+            #X_transformed.drop('ServicesProposes', axis=1, inplace=True)  # Optional: remove original column
+        """
 
         return X_transformed
 
